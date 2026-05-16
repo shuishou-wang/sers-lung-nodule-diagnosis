@@ -1,0 +1,25 @@
+# --- Secrets & Environment ---
+.env
+
+# --- Model binaries (contain training data) ---
+模型/pipeline.pkl
+模型/train_data_cache.npz
+
+# --- Competition documents (private) ---
+文件/
+
+# --- Screenshots ---
+web/screenshots/
+
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo
+
+# --- IDE ---
+.vscode/
+.idea/
+
+# --- OS ---
+.DS_Store
+Thumbs.db

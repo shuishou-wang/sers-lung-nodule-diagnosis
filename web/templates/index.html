@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SERS 肺结节智能诊断系统</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+/* ====== v4 Design System — Medical Professional ====== */
+:root {
+  --bg:        #f8fafc;
+  --card:      #ffffff;
+  --t1:        #0f172a;
+  --t2:        #334155;
+  --t3:        #94a3b8;
+  --accent:    #1e40af;
+  --accent-h:  #1e3a8a;
+  --accent-l:  rgba(30,64,175,0.08);
+  --mal:       #d97706;
+  --mal-l:     rgba(217,119,6,0.08);
+  --ben:       #059669;
+  --ben-l:     rgba(5,150,105,0.08);
+  --border:    #e2e8f0;
+  --shadow:    0 1px 2px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.06);
+  --radius:    12px;
+  --radius-sm: 8px;
+  --font:      "PingFang SC","Microsoft YaHei","Helvetica Neue",sans-serif;
+  --mono:      "SF Mono","Consolas","DIN Alternate",monospace;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+
+body{font-family:var(--font);background:var(--bg);color:var(--t2);min-height:100vh;line-height:1.6}
+
+/* ====== Header ====== */
+.header{background:#fff;border-bottom:1px solid var(--border);
+  display:flex;justify-content:space-between;align-items:center;
+  padding:14px 32px;position:sticky;top:0;z-index:100;box-shadow:0 1px 3px rgba(0,0,0,0.03)}
+.header-left{display:flex;align-items:center;gap:12px}
+.header-logo{font-size:22px}
+.header h1{font-size:17px;font-weight:700;color:var(--t1);letter-spacing:0.5px}
+.header-right{display:flex;align-items:center;gap:16px}
+.header-user{font-size:13px;color:var(--t3)}
+.header-user strong{color:var(--t2)}
+.btn-logout{padding:6px 16px;border:1px solid var(--border);border-radius:var(--radius-sm);
+  background:#fff;color:var(--t2);font-size:12px;font-family:var(--font);
+  cursor:pointer;transition:all 0.15s}
+.btn-logout:hover{border-color:var(--t3);color:var(--t1)}
+
+/* ====== Container ====== */
+.container{max-width:960px;margin:0 auto;padding:28px 24px 48px;display:flex;flex-direction:column;gap:24px}
+
+/* ====== Section Title ====== */
+.sec-title{font-size:13px;font-weight:700;color:var(--t2);margin-bottom:14px;
+  display:flex;align-items:center;gap:8px}
+.sec-title::before{content:'';display:inline-block;width:3px;height:14px;
+  background:var(--accent);border-radius:2px}
+
+/* ====== Demo Cases ====== */
+.demo-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.demo-card{padding:16px 18px;background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius);cursor:pointer;transition:all 0.2s;box-shadow:var(--shadow)}
+.demo-card:hover{border-color:#cbd5e1;transform:translateY(-2px);
+  box-shadow:0 4px 16px rgba(0,0,0,0.08)}
+.demo-card .name{font-size:14px;font-weight:650;color:var(--t1)}
+.demo-card .desc{font-size:11px;color:var(--t3);margin-top:4px}
+.tag{font-size:9px;padding:2px 10px;border-radius:10px;font-weight:600;display:inline-block;margin-top:8px}
+.tag-mal{background:var(--mal-l);color:var(--mal)}
+.tag-ben{background:var(--ben-l);color:var(--ben)}
+.tag-bdl{background:var(--accent-l);color:var(--accent)}
+
+/* ====== Import Panel ====== */
+.import-panel{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:24px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:16px}
+
+.upload-zone{border:2px dashed var(--border);border-radius:var(--radius-sm);padding:24px;
+  text-align:center;cursor:pointer;transition:all 0.2s;background:var(--bg)}
+.upload-zone:hover{border-color:var(--accent);background:rgba(30,64,175,0.02)}
+.upload-zone .icon{font-size:28px;color:var(--t3);margin-bottom:6px}
+.upload-zone .text{font-size:13px;color:var(--t2)}
+.upload-zone .hint{font-size:11px;color:var(--t3);margin-top:4px}
+
+.parse-msg{font-size:12px;padding:10px 14px;border-radius:var(--radius-sm);display:none}
+.parse-msg.ok{display:block;background:var(--ben-l);color:#065f46}
+.parse-msg.err{display:block;background:#fef2f2;color:#991b1b}
+.parse-msg.info{display:block;background:var(--accent-l);color:var(--accent)}
+
+/* Multi-patient selector */
+.patient-select{display:none;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm)}
+.patient-select .label{font-size:12px;color:var(--t2);margin-bottom:8px}
+.patient-select .opts{display:flex;gap:6px;flex-wrap:wrap}
+.patient-btn{padding:5px 14px;border:1px solid var(--border);border-radius:16px;
+  background:#fff;font-size:11px;font-family:var(--font);cursor:pointer;transition:all 0.12s}
+.patient-btn:hover{border-color:var(--t3);background:var(--bg)}
+.patient-btn.sel{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* Clinical inputs */
+.clinical-row{display:flex;gap:14px}
+.clinical-field{flex:1}
+.clinical-field label{display:block;font-size:12px;font-weight:600;color:var(--t2);margin-bottom:5px}
+.clinical-field input{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);
+  font-size:14px;font-family:var(--mono);color:var(--t1);
+  outline:none;transition:border-color 0.15s, box-shadow 0.15s}
+.clinical-field input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(30,64,175,0.1)}
+.clinical-field .hint{font-size:10px;color:var(--t3);margin-top:3px}
+.clinical-note{font-size:11px;color:var(--t3)}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 28px;
+  border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;
+  font-family:var(--font);cursor:pointer;transition:all 0.15s}
+.btn-diag{background:var(--accent);color:#fff;width:100%}
+.btn-diag:hover{background:var(--accent-h)}
+.btn-diag:disabled{background:#cbd5e1;cursor:not-allowed}
+
+.alert{padding:10px 14px;border-radius:var(--radius-sm);font-size:12px;display:none}
+.alert-err{display:block;background:#fef2f2;color:#dc2626}
+.alert-info{display:block;background:#fffbeb;color:#92400e}
+
+/* ====== Results ====== */
+#results{margin-top:4px}
+
+/* Probability Cards */
+.prob-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.prob-card{background:var(--card);border-radius:var(--radius);padding:28px 24px;
+  text-align:center;box-shadow:var(--shadow);border:1px solid var(--border)}
+.prob-card .val{font-size:56px;font-weight:800;line-height:1.1;font-family:var(--mono);letter-spacing:-2px}
+.prob-card .lbl{font-size:12px;color:var(--t3);margin-top:6px;font-weight:500}
+.prob-card.mal .val{color:var(--mal)}
+.prob-card.ben .val{color:var(--ben)}
+.prob-card.mal{border-top:3px solid var(--mal)}
+.prob-card.ben{border-top:3px solid var(--ben)}
+.prob-card .note{font-size:10px;color:var(--t3);margin-top:10px}
+
+/* Spectrum Panel */
+.spec-panel{background:var(--card);border-radius:var(--radius);padding:20px;
+  box-shadow:var(--shadow);border:1px solid var(--border)}
+.spec-panel .title{font-size:12px;font-weight:700;color:var(--t2);margin-bottom:12px}
+.spec-chart{height:300px}
+
+/* Drivers Panel */
+.drivers-panel{background:var(--card);border-radius:var(--radius);padding:20px;
+  box-shadow:var(--shadow);border:1px solid var(--border)}
+.drivers-panel .title{font-size:12px;font-weight:700;color:var(--t2);margin-bottom:16px}
+.drivers-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.driver-group h4{font-size:12px;font-weight:650;color:var(--t2);margin-bottom:10px;
+  padding-bottom:8px;border-bottom:1px solid var(--border)}
+
+.driver-bar{margin-bottom:10px}
+.driver-bar .head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+.driver-bar .name{font-size:12px;font-weight:600;color:var(--t1)}
+.driver-bar .pct{font-size:10px;color:var(--t3);font-family:var(--mono)}
+.driver-bar .dir{font-size:9px;padding:1px 8px;border-radius:10px;font-weight:600}
+.dir-up{background:var(--mal-l);color:var(--mal)}
+.dir-down{background:var(--ben-l);color:var(--ben)}
+.dir-neu{color:var(--t3)}
+
+.driver-bar .track{height:5px;background:var(--bg);border-radius:3px;overflow:hidden;margin-bottom:2px}
+.driver-bar .fill{height:100%;border-radius:3px;transition:width 0.5s ease}
+.fill-clin{background:var(--accent)}
+.fill-spec{background:#64748b}
+
+.driver-bar .detail{font-size:10px;color:var(--t3);line-height:1.4}
+
+/* ====== AI Chat Panel ====== */
+.ai-panel{background:var(--card);border-radius:var(--radius);padding:20px;
+  box-shadow:var(--shadow);border:1px solid var(--border)}
+.ai-panel .title{font-size:12px;font-weight:700;color:var(--t2);margin-bottom:14px;
+  display:flex;align-items:center;gap:8px}
+.ai-panel .title .badge{font-size:9px;background:var(--accent-l);color:var(--accent);
+  padding:2px 8px;border-radius:8px;font-weight:600}
+
+.ai-conversation{display:flex;flex-direction:column;gap:14px;max-height:450px;
+  overflow-y:auto;padding-right:4px;margin-bottom:14px}
+
+.ai-msg{max-width:88%;font-size:13px;line-height:1.7;padding:12px 16px;border-radius:10px;white-space:pre-wrap;word-break:break-word}
+.ai-msg.assistant{background:var(--bg);align-self:flex-start;border-bottom-left-radius:4px}
+.ai-msg.user{background:var(--accent);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+
+.ai-typing{display:flex;gap:8px;align-items:center;padding:6px 0;font-size:12px;color:var(--t3)}
+.ai-typing .dots{display:flex;gap:4px}
+.ai-typing .dots span{width:5px;height:5px;background:var(--t3);border-radius:50%;animation:bounce 1.4s infinite}
+.ai-typing .dots span:nth-child(2){animation-delay:0.2s}
+.ai-typing .dots span:nth-child(3){animation-delay:0.4s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
+
+.ai-input-row{display:flex;gap:8px}
+.ai-input-row input{flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);
+  font-size:13px;font-family:var(--font);color:var(--t1);outline:none;transition:all 0.15s}
+.ai-input-row input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(30,64,175,0.1)}
+.ai-input-row input::placeholder{color:var(--t3)}
+.ai-input-row .btn-send{padding:10px 18px;background:var(--accent);color:#fff;border:none;
+  border-radius:var(--radius-sm);font-size:13px;font-weight:600;
+  font-family:var(--font);cursor:pointer;transition:all 0.15s}
+.ai-input-row .btn-send:hover{background:var(--accent-h)}
+.ai-input-row .btn-send:disabled{background:#cbd5e1;cursor:not-allowed}
+
+.ai-disclaimer{font-size:10px;color:var(--t3);text-align:center;margin-top:10px}
+
+/* Empty state */
+.empty-state{text-align:center;color:var(--t3);padding:40px 20px;font-size:13px}
+
+/* Spinner */
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,0.3);
+  border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ====== Responsive ====== */
+@media(max-width:700px){
+  .demo-row{grid-template-columns:1fr}
+  .drivers-grid{grid-template-columns:1fr}
+  .clinical-row{flex-direction:column}
+  .prob-row{grid-template-columns:1fr}
+  .header{padding:12px 16px}
+  .container{padding:16px 12px 32px}
+}
+
+/* Scrollbar */
+.ai-conversation::-webkit-scrollbar{width:4px}
+.ai-conversation::-webkit-scrollbar-track{background:transparent}
+.ai-conversation::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+</style>
+</head>
+<body>
+
+<!-- ====== Header ====== -->
+<header class="header">
+  <div class="header-left">
+    <span class="header-logo">🏥</span>
+    <h1>SERS 肺结节智能诊断系统</h1>
+  </div>
+  <div class="header-right">
+    <span class="header-user">当前用户：<strong id="headerUser">admin</strong></span>
+    <button class="btn-logout" onclick="doLogout()">退出登录</button>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- ====== Demo Cases ====== -->
+  <section>
+    <div class="sec-title">快速演示</div>
+    <div class="demo-row" id="demoCards"></div>
+  </section>
+
+  <!-- ====== Import Section ====== -->
+  <section>
+    <div class="sec-title">导入诊断</div>
+    <div class="import-panel">
+      <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+        <div class="icon">📁</div>
+        <div class="text">点击或拖拽上传拉曼光谱文件</div>
+        <div class="hint">支持 .csv / .xlsx / .txt 格式 — 自动识别文件结构</div>
+        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv,.txt" style="display:none" onchange="handleFile(event)">
+      </div>
+      <div class="parse-msg" id="parseMsg"></div>
+
+      <!-- Multi-patient selector -->
+      <div class="patient-select" id="patientSelect">
+        <div class="label">检测到多条光谱，请选择：</div>
+        <div class="opts" id="patientOpts"></div>
+      </div>
+
+      <!-- Clinical markers -->
+      <div class="clinical-row">
+        <div class="clinical-field">
+          <label>CEA（ng/mL）</label>
+          <input type="number" id="cea" step="any" placeholder="留空使用默认值">
+          <div class="hint" id="ceaHint"></div>
+        </div>
+        <div class="clinical-field">
+          <label>SCC（ng/mL）</label>
+          <input type="number" id="scc" step="any" placeholder="留空使用默认值">
+          <div class="hint" id="sccHint"></div>
+        </div>
+        <div class="clinical-field">
+          <label>NSE（ng/mL）</label>
+          <input type="number" id="nse" step="any" placeholder="留空使用默认值">
+          <div class="hint" id="nseHint"></div>
+        </div>
+      </div>
+      <div class="clinical-note">留空则使用系统默认值</div>
+
+      <button class="btn btn-diag" id="diagBtn" disabled onclick="runDiagnosis()">
+        <span id="diagBtnText">请先导入光谱文件</span>
+      </button>
+      <div class="alert alert-err" id="alert" style="display:none"></div>
+    </div>
+  </section>
+
+  <!-- ====== Results ====== -->
+  <section id="results" style="display:none">
+    <div class="sec-title">诊断结果</div>
+
+    <!-- Probability Cards -->
+    <div class="prob-row" style="margin-bottom:18px">
+      <div class="prob-card mal">
+        <div class="val" id="malProb">--</div>
+        <div class="lbl">恶性概率</div>
+        <div class="note" id="malNote"></div>
+      </div>
+      <div class="prob-card ben">
+        <div class="val" id="benProb">--</div>
+        <div class="lbl">良性概率</div>
+        <div class="note" id="benNote">判定阈值：50%</div>
+      </div>
+    </div>
+
+    <!-- Spectrum Chart -->
+    <div class="spec-panel" style="margin-bottom:18px">
+      <div class="title">处理后拉曼光谱</div>
+      <div class="spec-chart" id="specChart"></div>
+    </div>
+
+    <!-- Diagnostic Drivers -->
+    <div class="drivers-panel" style="margin-bottom:18px">
+      <div class="title">诊断依据分析</div>
+      <div class="drivers-grid">
+        <div class="driver-group">
+          <h4>临床标志物贡献</h4>
+          <div id="clinDrivers"></div>
+        </div>
+        <div class="driver-group">
+          <h4>文献验证特征峰贡献</h4>
+          <div id="specDrivers"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Chat Panel -->
+    <div class="ai-panel" id="aiPanel" style="display:none">
+      <div class="title">
+        AI 智能解读
+        <span class="badge">DeepSeek</span>
+      </div>
+      <div class="ai-conversation" id="aiConversation"></div>
+      <div class="ai-typing" id="aiTyping" style="display:none">
+        <span>AI 正在分析</span>
+        <span class="dots"><span></span><span></span><span></span></span>
+      </div>
+      <div class="ai-input-row">
+        <input type="text" id="aiInput" placeholder="输入追问……"
+               onkeydown="if(event.key==='Enter')sendChatMessage()">
+        <button class="btn-send" id="aiSendBtn" onclick="sendChatMessage()">发送</button>
+      </div>
+      <div class="ai-disclaimer">AI 分析仅供参考，不能替代病理诊断</div>
+    </div>
+
+  </section>
+
+</div>
+
+<script>
+// ====== State ======
+var parsedSpectra = null;
+var selectedPatientIdx = 0;
+var specChart = null;
+var chatHistory = [];
+var lastDiagnosisCtx = null;
+
+function $(id){return document.getElementById(id)}
+
+// ====== Init ======
+document.addEventListener('DOMContentLoaded', function() {
+  renderDemoCards();
+  updateHints();
+  setupDragDrop();
+  window.addEventListener('resize', function(){if(specChart) specChart.resize()});
+});
+
+function updateHints() {
+  var d = window.DEFAULTS || {};
+  $('ceaHint').textContent = '默认值: ' + (d.CEA || '?');
+  $('sccHint').textContent = '默认值: ' + (d.SCC || '?');
+  $('nseHint').textContent = '默认值: ' + (d.NSE || '?');
+}
+
+// ====== Logout ======
+function doLogout() {
+  window.location.href = '/logout';
+}
+
+// ====== Drag & Drop ======
+function setupDragDrop() {
+  var z = $('uploadZone');
+  z.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    z.style.borderColor = 'var(--accent)';
+    z.style.background = 'rgba(30,64,175,0.03)';
+  });
+  z.addEventListener('dragleave', function() {
+    z.style.borderColor = '';
+    z.style.background = '';
+  });
+  z.addEventListener('drop', function(e) {
+    e.preventDefault();
+    z.style.borderColor = '';
+    z.style.background = '';
+    handleFile({ target: { files: e.dataTransfer.files } });
+  });
+}
+
+// ====== Demo Cards ======
+function renderDemoCards() {
+  var cases = window.DEMO_CASES || [];
+  var html = '';
+  cases.forEach(function(c) {
+    var tc = '', tn = '';
+    if (c.expected === 'malignant') { tc = 'tag-mal'; tn = '恶性'; }
+    else if (c.expected === 'benign') { tc = 'tag-ben'; tn = '良性'; }
+    else { tc = 'tag-bdl'; tn = '边界案例'; }
+    html += '<div class="demo-card" onclick="loadDemo(\'' + c.id + '\')">';
+    html += '<div class="name">' + c.name + '</div>';
+    html += '<div class="desc">' + c.description + '</div>';
+    html += '<span class="tag ' + tc + '">' + tn + '</span></div>';
+  });
+  $('demoCards').innerHTML = html;
+}
+
+function loadDemo(id) {
+  var cases = window.DEMO_CASES || [];
+  var c = cases.find(function(x) { return x.id === id; });
+  if (!c) return;
+  parsedSpectra = [c.spectrum];
+  selectedPatientIdx = 0;
+  $('patientSelect').style.display = 'none';
+  showParseMsg('已加载：' + c.name + ' | CEA=' + c.cea + ' SCC=' + c.scc + ' NSE=' + c.nse, 'ok');
+  $('cea').value = c.cea;
+  $('scc').value = c.scc;
+  $('nse').value = c.nse;
+  $('diagBtn').disabled = false;
+  $('diagBtnText').textContent = '开始诊断（' + c.name + '）';
+  runDiagnosis();
+}
+
+// ====== File Handling ======
+function handleFile(e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  showParseMsg('解析中...', 'info');
+
+  var fd = new FormData();
+  fd.append('file', file);
+  fetch('/api/parse_spectrum', { method: 'POST', body: fd })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.error) { showParseMsg(d.error, 'err'); return; }
+    if (!d.success) { showParseMsg(d.error || '解析失败', 'err'); return; }
+
+    parsedSpectra = d.spectra;
+    showParseMsg(d.message + '（' + d.n_spectra + ' 条光谱，' + d.n_values + ' 个数据点）', 'ok');
+
+    if (d.n_spectra === 1) {
+      $('patientSelect').style.display = 'none';
+      selectedPatientIdx = 0;
+      enableDiagBtn(file.name);
+    } else {
+      selectedPatientIdx = 0;
+      showPatientSelector(d.n_spectra);
+      enableDiagBtn(file.name + ' [' + (selectedPatientIdx + 1) + '/' + d.n_spectra + ']');
+    }
+  })
+  .catch(function(e) { showParseMsg('网络异常：' + e.message, 'err'); });
+}
+
+function showPatientSelector(n) {
+  $('patientSelect').style.display = 'block';
+  var html = '';
+  for (var i = 0; i < Math.min(n, 50); i++) {
+    html += '<button class="patient-btn' + (i === 0 ? ' sel' : '') + '" onclick="selectPatient(' + i + ')">第 ' + (i+1) + ' 条</button>';
+  }
+  $('patientOpts').innerHTML = html;
+}
+
+function selectPatient(idx) {
+  selectedPatientIdx = idx;
+  var btns = $('patientOpts').querySelectorAll('.patient-btn');
+  btns.forEach(function(b, i) { b.className = 'patient-btn' + (i === idx ? ' sel' : ''); });
+  if (parsedSpectra) enableDiagBtn('第 ' + (idx+1) + ' 条光谱 / 共 ' + parsedSpectra.length + ' 条');
+}
+
+function enableDiagBtn(label) {
+  $('diagBtn').disabled = false;
+  $('diagBtnText').textContent = '开始诊断（' + label + '）';
+}
+
+function showParseMsg(msg, cls) {
+  var m = $('parseMsg');
+  m.textContent = msg;
+  m.className = 'parse-msg ' + cls;
+}
+
+function showAlert(msg, cls) {
+  var a = $('alert');
+  a.textContent = msg;
+  a.className = 'alert alert-' + cls;
+  a.style.display = 'block';
+  setTimeout(function() { a.style.display = 'none'; }, 6000);
+}
+
+// ====== Diagnosis ======
+function runDiagnosis() {
+  if (!parsedSpectra || parsedSpectra.length === 0) {
+    showAlert('请先导入光谱文件', 'err');
+    return;
+  }
+
+  $('diagBtn').disabled = true;
+  $('diagBtnText').innerHTML = '<span class="spinner"></span> 诊断中...';
+
+  var spec = parsedSpectra[selectedPatientIdx];
+  var cea = $('cea').value, scc = $('scc').value, nse = $('nse').value;
+  var body = { spectrum: spec };
+  if (cea !== '') body.cea = parseFloat(cea);
+  if (scc !== '') body.scc = parseFloat(scc);
+  if (nse !== '') body.nse = parseFloat(nse);
+
+  fetch('/api/predict', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.error) { showAlert(d.error, 'err'); resetDiagBtn(); return; }
+    renderResult(d);
+    resetDiagBtn();
+  })
+  .catch(function(e) { showAlert('网络异常：' + e.message, 'err'); resetDiagBtn(); });
+}
+
+function resetDiagBtn() {
+  $('diagBtn').disabled = false;
+  if (parsedSpectra) {
+    var label = parsedSpectra.length > 1
+      ? '第 ' + (selectedPatientIdx + 1) + ' 条光谱'
+      : '已就绪';
+    enableDiagBtn(label);
+  }
+}
+
+// ====== Render Results ======
+function renderResult(d) {
+  $('results').style.display = 'block';
+
+  // Probabilities
+  var mp = d.probability_malignant, bp = d.probability_benign;
+  $('malProb').textContent = (mp * 100).toFixed(1) + '%';
+  $('benProb').textContent = (bp * 100).toFixed(1) + '%';
+
+  if (d.clinical_note) {
+    $('malNote').textContent = d.clinical_note;
+  } else {
+    $('malNote').textContent = '';
+  }
+
+  // Spectrum chart
+  renderSpectrum(d.display_spectrum, d.raman_shifts);
+
+  // Diagnostic drivers
+  renderDrivers(d.drivers, d.cea, d.scc, d.nse);
+
+  // AI chat — reset and trigger initial interpretation
+  resetChat(d);
+
+  // Scroll to results
+  $('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ====== Spectrum Chart ======
+function renderSpectrum(spectrum, shifts) {
+  if (!specChart) specChart = echarts.init($('specChart'));
+
+  // Downsample for performance (max 500 points)
+  var step = Math.max(1, Math.floor(spectrum.length / 500));
+  var xs = [], ys = [];
+  for (var i = 0; i < spectrum.length; i += step) { xs.push(shifts[i]); ys.push(spectrum[i]); }
+
+  specChart.setOption({
+    grid: { left: 52, right: 24, top: 20, bottom: 40 },
+    xAxis: {
+      type: 'value', name: '拉曼位移（cm⁻¹）', nameLocation: 'center', nameGap: 28,
+      min: 400, max: 1800,
+      nameTextStyle: { fontSize: 10, color: '#94a3b8' },
+      axisLine: { lineStyle: { color: '#e2e8f0' } }, axisTick: { show: false },
+      axisLabel: { fontSize: 10, color: '#94a3b8' },
+      splitLine: { lineStyle: { color: '#f1f5f9' } }
+    },
+    yAxis: {
+      type: 'value', name: '强度（a.u.）', nameTextStyle: { fontSize: 10, color: '#94a3b8' },
+      axisLine: { show: false }, axisTick: { show: false },
+      axisLabel: { fontSize: 10, color: '#94a3b8' },
+      splitLine: { lineStyle: { color: '#f1f5f9' } }
+    },
+    series: [{
+      type: 'line',
+      data: ys.map(function(v, i) { return [xs[i], v]; }),
+      lineStyle: { color: '#2563eb', width: 1.3 },
+      symbol: 'none',
+      areaStyle: {
+        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          { offset: 0, color: 'rgba(37,99,235,0.08)' },
+          { offset: 1, color: 'rgba(37,99,235,0)' }
+        ])
+      }
+    }],
+    tooltip: {
+      trigger: 'axis',
+      formatter: function(p) {
+        return p[0].data[0].toFixed(0) + ' cm⁻¹<br/>' + p[0].data[1].toFixed(3);
+      }
+    }
+  }, true);
+}
+
+// ====== Diagnostic Drivers ======
+function renderDrivers(drivers, cea, scc, nse) {
+  if (!drivers) return;
+
+  // Clinical drivers
+  var cd = drivers.clinical_drivers || [];
+  var ch = '';
+  cd.forEach(function(d) {
+    var dirCls = '', dirTxt = '';
+    if (d.direction.indexOf('malignant') >= 0) { dirCls = 'dir-up'; dirTxt = '↑ 恶性'; }
+    else if (d.direction.indexOf('benign') >= 0) { dirCls = 'dir-down'; dirTxt = '↓ 良性'; }
+    else { dirCls = 'dir-neu'; dirTxt = '≈ 中性'; }
+    ch += '<div class="driver-bar">';
+    ch += '<div class="head"><span class="name">' + d.name + '</span>';
+    ch += '<span class="dir ' + dirCls + '">' + dirTxt + '</span>';
+    ch += '<span class="pct">' + d.importance_pct.toFixed(1) + '%</span></div>';
+    ch += '<div class="track"><div class="fill fill-clin" style="width:' + Math.min(100, d.importance_pct * 3.5) + '%"></div></div>';
+    ch += '</div>';
+  });
+  $('clinDrivers').innerHTML = ch || '<div style="font-size:11px;color:var(--t3)">无临床数据</div>';
+
+  // Spectral drivers
+  var sd = drivers.spectral_drivers || [];
+  var sh = '';
+  sd.forEach(function(d) {
+    var dirCls = '', dirTxt = '';
+    if (d.direction.indexOf('malignant') >= 0) { dirCls = 'dir-up'; dirTxt = '↑ 恶性'; }
+    else if (d.direction.indexOf('benign') >= 0) { dirCls = 'dir-down'; dirTxt = '↓ 良性'; }
+    else { dirCls = 'dir-neu'; dirTxt = '≈ 中性'; }
+    var pStr = d.p_value < 0.001 ? 'p<0.001' : 'p=' + d.p_value.toFixed(3);
+    sh += '<div class="driver-bar">';
+    sh += '<div class="head"><span class="name">' + d.name + '</span>';
+    sh += '<span class="dir ' + dirCls + '">' + dirTxt + '</span>';
+    sh += '<span class="pct">' + d.importance_pct.toFixed(1) + '%</span></div>';
+    sh += '<div class="track"><div class="fill fill-spec" style="width:' + Math.min(100, d.importance_pct * 3.5) + '%"></div></div>';
+    sh += '<div class="detail">' + d.shift_cm.toFixed(0) + ' cm⁻¹ &middot; Z=' + d.value_z.toFixed(2) + ' &middot; ' + pStr + '</div>';
+    sh += '<div class="detail">' + d.bio_mechanism + '</div>';
+    sh += '</div>';
+  });
+  $('specDrivers').innerHTML = sh || '<div style="font-size:11px;color:var(--t3)">无显著文献峰</div>';
+}
+
+// ====== AI Chat ======
+function resetChat(d) {
+  chatHistory = [];
+  lastDiagnosisCtx = {
+    probability_malignant: d.probability_malignant,
+    prediction: d.prediction,
+    clinical_drivers: d.drivers.clinical_drivers,
+    spectral_drivers: d.drivers.spectral_drivers
+  };
+
+  $('aiPanel').style.display = 'block';
+  $('aiConversation').innerHTML = '';
+  $('aiInput').value = '';
+  $('aiInput').disabled = true;
+  $('aiSendBtn').disabled = true;
+
+  // Trigger initial AI interpretation
+  requestAI(null);
+}
+
+function requestAI(newMessage) {
+  $('aiTyping').style.display = 'flex';
+  $('aiInput').disabled = true;
+  $('aiSendBtn').disabled = true;
+
+  fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      diagnosis_context: lastDiagnosisCtx,
+      messages: chatHistory,
+      new_message: newMessage || ''
+    })
+  })
+  .then(function(r) {
+    if (r.status === 401) {
+      window.location.href = '/login';
+      throw new Error('Session expired');
+    }
+    if (!r.ok) throw new Error('Server error: ' + r.status);
+    return r.json();
+  })
+  .then(function(d) {
+    $('aiTyping').style.display = 'none';
+
+    if (d.error) {
+      appendMessage('assistant', 'AI 解读暂时不可用：' + d.error);
+    } else {
+      // Add user message if this was a follow-up
+      if (newMessage) {
+        appendMessage('user', newMessage);
+        chatHistory.push({ role: 'user', content: newMessage });
+      }
+      // Add AI reply
+      appendMessage('assistant', d.reply);
+      chatHistory.push({ role: 'assistant', content: d.reply });
+    }
+
+    $('aiInput').disabled = false;
+    $('aiSendBtn').disabled = false;
+    $('aiInput').focus();
+    scrollConversation();
+  })
+  .catch(function(e) {
+    $('aiTyping').style.display = 'none';
+    appendMessage('assistant', 'AI 解读请求失败：' + e.message + '。请稍后重试。');
+    $('aiInput').disabled = false;
+    $('aiSendBtn').disabled = false;
+    scrollConversation();
+  });
+}
+
+function sendChatMessage() {
+  var msg = $('aiInput').value.trim();
+  if (!msg) return;
+  $('aiInput').value = '';
+  requestAI(msg);
+}
+
+function appendMessage(role, content) {
+  var div = document.createElement('div');
+  div.className = 'ai-msg ' + role;
+  div.textContent = content;
+  $('aiConversation').appendChild(div);
+}
+
+function scrollConversation() {
+  var conv = $('aiConversation');
+  conv.scrollTop = conv.scrollHeight;
+}
+</script>
+</body>
+</html>

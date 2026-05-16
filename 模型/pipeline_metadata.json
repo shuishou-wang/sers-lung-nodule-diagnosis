@@ -1,0 +1,21 @@
+{
+  "timestamp": "2026-05-15 22:48:16",
+  "pipeline": "airPLS->SG(11,3)->ZScore->PCA(14) || CEA+SCC+NSE->impute->ZScore || hstack->SMOTE(3)->RF(50,3)",
+  "hyperparameters": {
+    "sg_window": 11,
+    "sg_polyorder": 3,
+    "pca_n": 14,
+    "pca_cumvar": 0.9889140003465768,
+    "smote_k": 3,
+    "rf_n_estimators": 50,
+    "rf_max_depth": 3,
+    "class_weight": "balanced",
+    "random_state": 42
+  },
+  "dataset": {
+    "n_samples": 49,
+    "malignant": 30,
+    "benign": 19
+  },
+  "data_path": "(see data/ folder)"
+}

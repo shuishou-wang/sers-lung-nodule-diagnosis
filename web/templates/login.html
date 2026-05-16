@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SERS 肺结节智能诊断系统 — 登录</title>
+<style>
+/* ====== v4 Design System — Medical Professional ====== */
+:root {
+  --bg:        #f8fafc;
+  --card:      #ffffff;
+  --t1:        #0f172a;
+  --t2:        #334155;
+  --t3:        #94a3b8;
+  --accent:    #1e40af;
+  --accent-h:  #1e3a8a;
+  --border:    #e2e8f0;
+  --shadow:    0 1px 2px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.06);
+  --radius:    12px;
+  --error:     #dc2626;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+
+body{
+  display:flex;align-items:center;justify-content:center;
+  min-height:100vh;background:linear-gradient(160deg, #f1f5f9 0%, #f8fafc 40%, #eff6ff 100%);
+  font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",sans-serif;
+}
+
+body::before {
+  content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse at 30% 20%, rgba(30,64,175,0.03) 0%, transparent 60%),
+             radial-gradient(ellipse at 70% 80%, rgba(5,150,105,0.03) 0%, transparent 60%);
+  pointer-events:none;z-index:0;
+}
+
+.login-wrapper{position:relative;z-index:1;width:420px;max-width:92vw}
+
+.system-title{text-align:center;margin-bottom:36px}
+.system-title h1{font-size:24px;font-weight:700;color:var(--t1);letter-spacing:1px;margin-bottom:4px}
+.system-title .divider{width:40px;height:2px;background:var(--accent);margin:0 auto;border-radius:1px}
+
+.login-card{background:var(--card);border-radius:var(--radius);padding:40px 36px;
+  box-shadow:var(--shadow);border:1px solid var(--border)}
+.login-card h2{font-size:16px;color:var(--t2);font-weight:500;text-align:center;margin-bottom:28px}
+
+.form-group{margin-bottom:20px}
+.form-group label{display:block;font-size:13px;font-weight:600;color:var(--t2);margin-bottom:7px}
+.form-group .input-wrap{position:relative}
+.form-group .icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);
+  font-size:16px;color:var(--t3);pointer-events:none}
+.form-group input{width:100%;padding:11px 14px 11px 42px;border:1px solid var(--border);
+  border-radius:8px;font-size:15px;color:var(--t1);font-family:inherit;
+  outline:none;transition:border-color 0.2s, box-shadow 0.2s;background:var(--bg)}
+.form-group input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(30,64,175,0.1);background:#fff}
+.form-group input::placeholder{color:var(--t3)}
+
+.btn-login{width:100%;padding:12px;background:var(--accent);color:#fff;border:none;
+  border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;
+  font-family:inherit;letter-spacing:4px;transition:background 0.2s, transform 0.1s;margin-top:4px}
+.btn-login:hover{background:var(--accent-h)}
+.btn-login:active{transform:scale(0.98)}
+
+.error-msg{text-align:center;font-size:13px;color:var(--error);margin-top:14px;display:none}
+
+.footer-note{text-align:center;font-size:11px;color:var(--t3);margin-top:24px}
+</style>
+</head>
+<body>
+
+<div class="login-wrapper">
+  <div class="system-title">
+    <h1>SERS 肺结节智能诊断系统</h1>
+    <div class="divider"></div>
+  </div>
+
+  <div class="login-card">
+    <h2>登录</h2>
+    <div class="form-group">
+      <label for="username">账号</label>
+      <div class="input-wrap">
+        <span class="icon">👤</span>
+        <input type="text" id="username" placeholder="请输入账号" autocomplete="username" autofocus>
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="password">密码</label>
+      <div class="input-wrap">
+        <span class="icon">🔒</span>
+        <input type="password" id="password" placeholder="请输入密码" autocomplete="current-password">
+      </div>
+    </div>
+    <button class="btn-login" id="loginBtn" onclick="doLogin()">登 录</button>
+    <p class="error-msg" id="errorMsg"></p>
+  </div>
+
+  <p class="footer-note">SERS &middot; 表面增强拉曼光谱 &middot; 智能辅助诊断</p>
+</div>
+
+<script>
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') doLogin();
+});
+
+async function doLogin() {
+  var u = document.getElementById('username').value.trim();
+  var p = document.getElementById('password').value.trim();
+  var err = document.getElementById('errorMsg');
+  var btn = document.getElementById('loginBtn');
+
+  if (!u || !p) {
+    err.textContent = '请输入账号和密码';
+    err.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '验证中...';
+
+  try {
+    var r = await fetch('/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: u, password: p })
+    });
+    var d = await r.json();
+    if (d.success) {
+      window.location.href = d.redirect;
+    } else {
+      err.textContent = d.error || '账号或密码错误';
+      err.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = '登 录';
+    }
+  } catch (e) {
+    err.textContent = '网络异常，请重试';
+    err.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = '登 录';
+  }
+}
+</script>
+</body>
+</html>
