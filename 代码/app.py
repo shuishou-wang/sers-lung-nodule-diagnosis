@@ -65,7 +65,7 @@ else:
 # ========================================================================
 #  System Prompt for LLM Diagnosis Interpretation
 # ========================================================================
-LLM_SYSTEM_PROMPT = """你是SERS肺结节诊断系统的AI临床顾问。你的角色是帮助临床医生和研究人员理解诊断结果。
+LLM_SYSTEM_PROMPT = """你是SERS多模态融合肺结节诊断系统的AI临床顾问。你的角色是帮助临床医生和研究人员理解诊断结果。
 
 ## 系统背景
 - 技术路线：表面增强拉曼光谱(SERS) + 临床肿瘤标志物(CEA/SCC/NSE) → 随机森林中融合
@@ -158,7 +158,7 @@ def build_chat_messages(diagnosis_context):
 #  Load Pipeline & Assets
 # ========================================================================
 print("=" * 60)
-print("  Loading SERS 肺结节智能诊断系统 v4...")
+print("  Loading SERS 多模态融合肺结节诊断系统 v4...")
 
 PIPELINE = joblib.load(os.path.join(MODEL_DIR, 'pipeline.pkl'))
 
@@ -469,7 +469,7 @@ def _inline_login_html():
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SERS 肺结节智能诊断系统 — 登录</title>
+<title>SERS 多模态融合肺结节诊断系统 — 登录</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{display:flex;align-items:center;justify-content:center;min-height:100vh;
@@ -492,7 +492,7 @@ body{display:flex;align-items:center;justify-content:center;min-height:100vh;
 </head>
 <body>
 <div class="login-card">
-<h1>SERS 肺结节智能诊断系统</h1>
+<h1>SERS 多模态融合肺结节诊断系统</h1>
 <h2>登录</h2>
 <div class="form-group">
 <label>账号</label>
@@ -703,7 +703,7 @@ def chat():
 
 if __name__ == '__main__':
     print(f"\n{'='*60}")
-    print(f"  SERS 肺结节智能诊断系统 v4")
+    print(f"  SERS 多模态融合肺结节诊断系统 v4")
     print(f"  Open: http://localhost:5000")
     print(f"  Login: admin / (see APP_PASSWORD env var)")
     print(f"  Session: 30min timeout")
